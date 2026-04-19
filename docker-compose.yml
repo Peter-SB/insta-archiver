@@ -1,0 +1,12 @@
+services:
+  archiver:
+    build: .
+    container_name: insta-archiver
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data
+    environment:
+      - DATA_DIR=/data
+      - WHISPER_MODEL=base

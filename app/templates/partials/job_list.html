@@ -1,0 +1,32 @@
+{% if jobs %}
+<table>
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Post</th>
+            <th>Account</th>
+            <th>Folder</th>
+            <th>Status</th>
+            <th>Note</th>
+            <th>Error</th>
+            <th>Created</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for job in jobs %}
+        <tr>
+            <td>{{ job.id }}</td>
+            <td><a href="{{ job.url }}" target="_blank" rel="noopener">{{ job.shortcode }}</a></td>
+            <td>{{ job.account_name or "—" }}</td>
+            <td>{{ job.folder }}</td>
+            <td><span class="status {{ job.status }}">{{ job.status }}</span></td>
+            <td class="truncate">{{ job.note_path or "—" }}</td>
+            <td class="truncate">{{ job.error_message or "—" }}</td>
+            <td class="muted">{{ job.created_at[:16] }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="empty-state">No jobs yet. Submit an Instagram URL above to get started.</div>
+{% endif %}

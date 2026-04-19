@@ -1,0 +1,15 @@
+{% if error %}
+<div class="alert error">{{ error }}</div>
+{% elif warning %}
+<div class="alert warning">
+    ⚠️ This URL has already been submitted.
+    <form hx-post="/jobs" hx-target="#form-result" hx-swap="innerHTML">
+        <input type="hidden" name="url" value="{{ url }}">
+        <input type="hidden" name="folder" value="{{ folder }}">
+        <input type="hidden" name="force" value="true">
+        <button type="submit" class="btn-link">Add Anyway</button>
+    </form>
+</div>
+{% elif success %}
+<div class="alert success">✓ Job added — processing will begin shortly.</div>
+{% endif %}
