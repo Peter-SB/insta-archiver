@@ -42,7 +42,7 @@ def render_note(
 
 
 def write_note(
-    data_dir: str,
+    markdown_dir: str,
     folder: str,
     account_name: str,
     shortcode: str,
@@ -53,8 +53,8 @@ def write_note(
 ) -> str:
     """Render and write a markdown note file.
 
-    Pipeline step 3: Returns the path relative to data_dir for storage in DB.
-    File is written to {data_dir}/{folder}/{account}_{shortcode}/{account}_{shortcode}.md
+    Pipeline step 3: Returns the path relative to markdown_dir for storage in DB.
+    File is written to {markdown_dir}/{folder}/{account}_{shortcode}.md
     """
     content = render_note(
         shortcode=shortcode,
@@ -67,10 +67,20 @@ def write_note(
     )
 
     target_name = f"{account_name}_{shortcode}"
-    relative_path = os.path.join(folder, target_name, f"{target_name}.md")
-    full_path = os.path.join(data_dir, relative_path)
+    account_dir = os.path.join(markdown_dir, folder, account_name)
+    os.makedirs(account_dir, exist_ok=True)
 
-    os.makedirs(os.path.dirname(full_path), exist_ok=True)
+    # Build a deduplicated filename so existing notes are never overwritten.
+    file_name = f"{target_name}.md"
+    if os.path.exists(os.path.join(account_dir, file_name)):
+        count = 2
+        while os.path.exists(os.path.join(account_dir, f"{target_name} ({count}).md")):
+            count += 1
+        file_name = f"{target_name} ({count}).md"
+
+    full_path = os.path.join(account_dir, file_name)
+    relative_path = os.path.join(folder, account_name, file_name)
+
     with open(full_path, "w", encoding="utf-8") as f:
         f.write(content)
 

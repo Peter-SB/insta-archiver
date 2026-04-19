@@ -34,9 +34,11 @@ templates = Jinja2Templates(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Startup: initialise DB, ensure default folder exists, start worker."""
+    """Startup: initialise DB, create data subdirectories, start worker."""
     init_db()
-    os.makedirs(os.path.join(config.DATA_DIR, config.DEFAULT_FOLDER), exist_ok=True)
+    for directory in (config.DB_DIR, config.MEDIA_DIR,
+                      os.path.join(config.MARKDOWN_DIR, config.DEFAULT_FOLDER)):
+        os.makedirs(directory, exist_ok=True)
     start_worker()
     logger.info("Application started")
     yield
@@ -46,11 +48,16 @@ app = FastAPI(title="Instagram Archiver", lifespan=lifespan)
 
 
 def _list_folders() -> list[str]:
-    """Scan DATA_DIR for subdirectories. Always includes the default folder."""
+    """Scan MARKDOWN_DIR for subdirectories. Always includes the default folder.
+
+    Scans MARKDOWN_DIR (not DATA_DIR) so the folder list reflects only note
+    output locations. This lets MARKDOWN_DIR be mounted as an Obsidian vault
+    while MEDIA_DIR is kept separate.
+    """
     folders: set[str] = set()
-    if os.path.isdir(config.DATA_DIR):
-        for name in os.listdir(config.DATA_DIR):
-            path = os.path.join(config.DATA_DIR, name)
+    if os.path.isdir(config.MARKDOWN_DIR):
+        for name in os.listdir(config.MARKDOWN_DIR):
+            path = os.path.join(config.MARKDOWN_DIR, name)
             if os.path.isdir(path) and not name.startswith("."):
                 folders.add(name)
     folders.add(config.DEFAULT_FOLDER)
@@ -76,6 +83,7 @@ async def add_job(
     request: Request,
     url: str = Form(...),
     folder: str = Form(config.DEFAULT_FOLDER),
+    save_video: bool = Form(False),
     force: bool = Form(False),
 ):
     """Submit a new archive job.
@@ -98,11 +106,11 @@ async def add_job(
         return templates.TemplateResponse(
             request,
             "partials/job_form_result.html",
-            {"warning": True, "url": url, "folder": folder},
+            {"warning": True, "url": url, "folder": folder, "save_video": save_video},
         )
 
     # Create job and wake the worker
-    create_job(url=url, shortcode=shortcode, folder=folder)
+    create_job(url=url, shortcode=shortcode, folder=folder, save_video=save_video)
     signal_worker()
 
     response = templates.TemplateResponse(

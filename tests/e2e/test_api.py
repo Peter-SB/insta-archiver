@@ -16,16 +16,23 @@ import app.database as database
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
-    """Create a test client with isolated DB and data directory.
+    """Create a test client with isolated DB and split data directories.
 
     Mocks start_worker so no background thread is spawned during tests.
     """
-    db_path = str(tmp_path / "test.db")
     data_dir = str(tmp_path / "data")
-    os.makedirs(os.path.join(data_dir, "Insta Archive"), exist_ok=True)
+    db_dir = os.path.join(data_dir, "db")
+    markdown_dir = os.path.join(data_dir, "markdown")
+    media_dir = os.path.join(data_dir, "media")
+    for d in (db_dir, media_dir, os.path.join(markdown_dir, "Insta Archive")):
+        os.makedirs(d, exist_ok=True)
 
+    db_path = os.path.join(db_dir, "test.db")
     monkeypatch.setattr(config, "DB_PATH", db_path)
     monkeypatch.setattr(config, "DATA_DIR", data_dir)
+    monkeypatch.setattr(config, "DB_DIR", db_dir)
+    monkeypatch.setattr(config, "MARKDOWN_DIR", markdown_dir)
+    monkeypatch.setattr(config, "MEDIA_DIR", media_dir)
 
     # Reset any existing thread-local connection
     database.close_connection()
@@ -52,6 +59,7 @@ class TestIndex:
         response = client.get("/")
         assert 'name="url"' in response.text
         assert 'name="folder"' in response.text
+        assert 'name="save_video"' in response.text
 
 
 class TestAddJob:
@@ -102,6 +110,22 @@ class TestAddJob:
         assert response.status_code == 200
         assert len(database.get_all_jobs()) == 2
 
+    def test_save_video_stored(self, client):
+        client.post(
+            "/jobs",
+            data={"url": "https://instagram.com/reel/ABC123/", "folder": "Insta Archive", "save_video": "true"},
+        )
+        jobs = database.get_all_jobs()
+        assert jobs[0]["save_video"] == 1
+
+    def test_save_video_defaults_false(self, client):
+        client.post(
+            "/jobs",
+            data={"url": "https://instagram.com/reel/ABC123/", "folder": "Insta Archive"},
+        )
+        jobs = database.get_all_jobs()
+        assert jobs[0]["save_video"] == 0
+
     def test_success_triggers_refresh(self, client):
         response = client.post(
             "/jobs",
@@ -131,8 +155,9 @@ class TestFolders:
         assert response.status_code == 200
         assert "Insta Archive" in response.json()
 
-    def test_lists_data_subdirectories(self, client, tmp_path):
-        os.makedirs(os.path.join(tmp_path, "data", "Custom Folder"), exist_ok=True)
+    def test_lists_markdown_subdirectories(self, client, tmp_path):
+        """Folders are sourced from MARKDOWN_DIR, not DATA_DIR root."""
+        os.makedirs(os.path.join(tmp_path, "data", "markdown", "Custom Folder"), exist_ok=True)
         response = client.get("/folders")
         assert "Custom Folder" in response.json()
 

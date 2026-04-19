@@ -89,7 +89,7 @@ class TestWriteNote:
 
     def test_creates_file_at_correct_path(self, tmp_path):
         relative = write_note(
-            data_dir=str(tmp_path),
+            markdown_dir=str(tmp_path),
             folder="TestFolder",
             account_name="testuser",
             shortcode="ABC123",
@@ -98,14 +98,14 @@ class TestWriteNote:
             transcript="transcript text",
             date="2025-01-01",
         )
-        assert relative == os.path.join("TestFolder", "testuser_ABC123", "testuser_ABC123.md")
+        assert relative == os.path.join("TestFolder", "testuser", "testuser_ABC123.md")
 
-        full_path = tmp_path / "TestFolder" / "testuser_ABC123" / "testuser_ABC123.md"
+        full_path = tmp_path / "TestFolder" / "testuser" / "testuser_ABC123.md"
         assert full_path.exists()
 
     def test_file_contains_description_and_transcript(self, tmp_path):
         write_note(
-            data_dir=str(tmp_path),
+            markdown_dir=str(tmp_path),
             folder="F",
             account_name="user",
             shortcode="SC",
@@ -114,13 +114,13 @@ class TestWriteNote:
             transcript="my transcript",
             date="date",
         )
-        content = (tmp_path / "F" / "user_SC" / "user_SC.md").read_text()
+        content = (tmp_path / "F" / "user" / "user_SC.md").read_text()
         assert "my description" in content
         assert "my transcript" in content
 
     def test_creates_nested_directories(self, tmp_path):
         write_note(
-            data_dir=str(tmp_path),
+            markdown_dir=str(tmp_path),
             folder="New Folder",
             account_name="acct",
             shortcode="SC",
@@ -129,4 +129,53 @@ class TestWriteNote:
             transcript="t",
             date="date",
         )
-        assert (tmp_path / "New Folder" / "acct_SC").is_dir()
+        assert (tmp_path / "New Folder" / "acct").is_dir()  # per-account subfolder
+
+
+class TestWriteNoteDeduplication:
+    """write_note should never overwrite an existing note.
+
+    When the same post is submitted a second time the file is saved with a
+    ' (2)' suffix.  A third submission becomes ' (3)', and so on.
+    """
+
+    def _write(self, tmp_path, shortcode="SC", **overrides):
+        kwargs = dict(
+            markdown_dir=str(tmp_path),
+            folder="Folder",
+            account_name="user",
+            shortcode=shortcode,
+            url="url",
+            description="desc",
+            transcript="trans",
+            date="2025-01-01",
+        )
+        kwargs.update(overrides)
+        return write_note(**kwargs)
+
+    def test_first_write_has_no_suffix(self, tmp_path):
+        relative = self._write(tmp_path)
+        assert relative == os.path.join("Folder", "user", "user_SC.md")
+
+    def test_second_write_gets_count_2(self, tmp_path):
+        self._write(tmp_path)
+        relative = self._write(tmp_path)
+        assert relative == os.path.join("Folder", "user", "user_SC (2).md")
+
+    def test_third_write_gets_count_3(self, tmp_path):
+        self._write(tmp_path)
+        self._write(tmp_path)
+        relative = self._write(tmp_path)
+        assert relative == os.path.join("Folder", "user", "user_SC (3).md")
+
+    def test_both_files_exist_after_duplicate(self, tmp_path):
+        self._write(tmp_path)
+        self._write(tmp_path)
+        assert (tmp_path / "Folder" / "user" / "user_SC.md").exists()
+        assert (tmp_path / "Folder" / "user" / "user_SC (2).md").exists()
+
+    def test_different_shortcodes_do_not_interfere(self, tmp_path):
+        r1 = self._write(tmp_path, shortcode="AAA")
+        r2 = self._write(tmp_path, shortcode="BBB")
+        assert r1 == os.path.join("Folder", "user", "user_AAA.md")
+        assert r2 == os.path.join("Folder", "user", "user_BBB.md")

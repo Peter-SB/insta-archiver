@@ -170,6 +170,16 @@
             color: #084298;
         }
 
+        .status.downloading {
+            background: #cfe2ff;
+            color: #084298;
+        }
+
+        .status.transcribing {
+            background: #e0cffc;
+            color: #3d0a91;
+        }
+
         .status.successful {
             background: #d1e7dd;
             color: #0a3622;
@@ -189,6 +199,15 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+            color: var(--muted);
         }
 
         .empty-state {
@@ -212,6 +231,10 @@
                     {% endfor %}
                 </select>
                 <button type="submit">Archive</button>
+            </div>
+            <div class="checkbox-row">
+                <input type="checkbox" name="save_video" id="save_video" value="true">
+                <label for="save_video">Save video file after transcription</label>
             </div>
         </form>
 

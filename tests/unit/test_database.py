@@ -32,6 +32,16 @@ class TestCreateJob:
         jobs = database.get_all_jobs()
         assert jobs[0]["created_at"] is not None
 
+    def test_save_video_defaults_false(self, test_db):
+        database.create_job("url", "SC", "folder")
+        jobs = database.get_all_jobs()
+        assert jobs[0]["save_video"] == 0
+
+    def test_save_video_stored_true(self, test_db):
+        database.create_job("url", "SC", "folder", save_video=True)
+        jobs = database.get_all_jobs()
+        assert jobs[0]["save_video"] == 1
+
 
 class TestGetAllJobs:
     def test_returns_newest_first(self, test_db):
@@ -74,6 +84,16 @@ class TestUpdateJobStatus:
         database.update_job_status(job_id, "started")
         jobs = database.get_all_jobs()
         assert jobs[0]["status"] == "started"
+
+    def test_downloading_status(self, test_db):
+        job_id = database.create_job("url", "SC", "folder")
+        database.update_job_status(job_id, "downloading")
+        assert database.get_all_jobs()[0]["status"] == "downloading"
+
+    def test_transcribing_status(self, test_db):
+        job_id = database.create_job("url", "SC", "folder")
+        database.update_job_status(job_id, "transcribing")
+        assert database.get_all_jobs()[0]["status"] == "transcribing"
 
     def test_sets_note_path(self, test_db):
         job_id = database.create_job("url", "SC", "folder")

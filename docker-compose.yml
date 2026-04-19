@@ -6,7 +6,11 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./data:/data
+      # Mount each data directory independently so they can be mapped to
+      # different host locations (e.g. markdown directly into an Obsidian vault).
+      - ./data/db:/data/db
+      - ./data/markdown:/data/markdown
+      - ./data/media:/data/media
     environment:
       - DATA_DIR=/data
       - WHISPER_MODEL=base

@@ -44,6 +44,7 @@ def init_db() -> None:
             account_name  TEXT,
             status        TEXT    NOT NULL DEFAULT 'waiting',
             folder        TEXT    NOT NULL DEFAULT 'Insta Archive',
+            save_video    INTEGER NOT NULL DEFAULT 0,
             note_path     TEXT,
             error_message TEXT,
             created_at    TEXT    NOT NULL
@@ -52,12 +53,12 @@ def init_db() -> None:
     conn.commit()
 
 
-def create_job(url: str, shortcode: str, folder: str) -> int:
+def create_job(url: str, shortcode: str, folder: str, save_video: bool = False) -> int:
     """Insert a new job with status 'waiting'. Returns the new job ID."""
     conn = _get_connection()
     cursor = conn.execute(
-        "INSERT INTO jobs (url, shortcode, folder, status, created_at) VALUES (?, ?, ?, 'waiting', ?)",
-        (url, shortcode, folder, datetime.now(timezone.utc).isoformat()),
+        "INSERT INTO jobs (url, shortcode, folder, save_video, status, created_at) VALUES (?, ?, ?, ?, 'waiting', ?)",
+        (url, shortcode, folder, int(save_video), datetime.now(timezone.utc).isoformat()),
     )
     conn.commit()
     return cursor.lastrowid

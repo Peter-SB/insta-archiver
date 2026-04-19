@@ -36,10 +36,10 @@ def extract_shortcode(url: str) -> str:
     return match.group(1)
 
 
-def download_post(url: str, folder: str, data_dir: str) -> PostData:
+def download_post(url: str, folder: str, media_dir: str) -> PostData:
     """Download an Instagram post and return its metadata.
 
-    Pipeline step 1: Downloads to {data_dir}/{folder}/{account}_{shortcode}/.
+    Pipeline step 1: Downloads to {media_dir}/{folder}/{account}/.
     Creates a fresh Instaloader instance per call to avoid shared state.
     """
     shortcode = extract_shortcode(url)
@@ -58,7 +58,7 @@ def download_post(url: str, folder: str, data_dir: str) -> PostData:
     target_name = f"{account_name}_{shortcode}"
 
     # Configure download directory after we know the account name
-    loader.dirname_pattern = os.path.join(data_dir, folder, target_name)
+    loader.dirname_pattern = os.path.join(media_dir, folder, account_name)
     loader.filename_pattern = target_name
     loader.download_post(post, target=target_name)
 
@@ -66,7 +66,7 @@ def download_post(url: str, folder: str, data_dir: str) -> PostData:
 
     video_path = None
     if post.is_video:
-        video_path = os.path.join(data_dir, folder, target_name, f"{target_name}.mp4")
+        video_path = os.path.join(media_dir, folder, account_name, f"{target_name}.mp4")
 
     return PostData(
         shortcode=shortcode,
