@@ -103,9 +103,3 @@ pytest tests/ -v
 | HTMX over SPA framework | Server-rendered partials keep the frontend simple with no build step |
 | Jinja2 markdown template | Output format can be changed by editing `note.md` without touching Python |
 | Sequential worker | Matches the "reduce concurrent resource load" goal; no need for async job queue |
-
-## AI Notes
-
-- Document clearly but concisely with clear explanation of design decisions and tradeoffs.
-- Unit tests and e2e tests included.
-- See `./Notes and References` for sample code and ideas. All code is written fresh — nothing imported from that folder.
