@@ -11,6 +11,7 @@ Endpoints:
 import os
 import logging
 from contextlib import asynccontextmanager
+from urllib.parse import urlparse
 
 from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse
@@ -51,7 +52,11 @@ app = FastAPI(title="Insta & YouTube Archiver", lifespan=lifespan)
 
 def _detect_platform(url: str) -> str:
     """Return 'youtube' for YouTube URLs, 'instagram' otherwise."""
-    if "youtube.com" in url or "youtu.be" in url:
+    try:
+        host = urlparse(url).hostname or ""
+    except Exception:
+        host = ""
+    if host in ("youtube.com", "www.youtube.com", "youtu.be", "m.youtube.com"):
         return "youtube"
     return "instagram"
 
