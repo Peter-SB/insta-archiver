@@ -220,11 +220,11 @@
 
 <body>
     <div class="container">
-        <h1>📷 Instagram Archiver</h1>
+        <h1>📷 Instagram & YouTube Archiver</h1>
 
         <form hx-post="/jobs" hx-target="#form-result" hx-swap="innerHTML">
             <div class="form-row">
-                <input type="url" name="url" placeholder="Instagram post or reel URL..." required>
+                <input type="url" name="url" placeholder="Instagram post/reel or YouTube video URL..." required>
                 <select name="folder">
                     {% for f in folders %}
                     <option value="{{ f }}" {% if f==default_folder %}selected{% endif %}>{{ f }}</option>

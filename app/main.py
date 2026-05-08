@@ -19,6 +19,7 @@ from fastapi.templating import Jinja2Templates
 from app import config
 from app.database import init_db, create_job, get_all_jobs, job_exists_for_url
 from app.services.instaloader_service import extract_shortcode
+from app.services.ytdlp_service import extract_video_id
 from app.worker import start_worker, signal_worker
 
 logging.basicConfig(
@@ -37,18 +38,33 @@ async def lifespan(app: FastAPI):
     """Startup: initialise DB, create data subdirectories, start worker."""
     init_db()
     for directory in (config.DB_DIR, config.MEDIA_DIR,
-                      os.path.join(config.MARKDOWN_DIR, config.DEFAULT_FOLDER)):
+                      os.path.join(config.MARKDOWN_DIR, config.DEFAULT_FOLDER),
+                      os.path.join(config.MARKDOWN_DIR, config.YOUTUBE_DEFAULT_FOLDER)):
         os.makedirs(directory, exist_ok=True)
     start_worker()
     logger.info("Application started")
     yield
 
 
-app = FastAPI(title="Instagram Archiver", lifespan=lifespan)
+app = FastAPI(title="Insta & YouTube Archiver", lifespan=lifespan)
+
+
+def _detect_platform(url: str) -> str:
+    """Return 'youtube' for YouTube URLs, 'instagram' otherwise."""
+    if "youtube.com" in url or "youtu.be" in url:
+        return "youtube"
+    return "instagram"
+
+
+def _extract_id(url: str, platform: str) -> str:
+    """Extract the content ID (shortcode or video ID) from a URL."""
+    if platform == "youtube":
+        return extract_video_id(url)
+    return extract_shortcode(url)
 
 
 def _list_folders() -> list[str]:
-    """Scan MARKDOWN_DIR for subdirectories. Always includes the default folder.
+    """Scan MARKDOWN_DIR for subdirectories. Always includes the default folders.
 
     Scans MARKDOWN_DIR (not DATA_DIR) so the folder list reflects only note
     output locations. This lets MARKDOWN_DIR be mounted as an Obsidian vault
@@ -61,6 +77,7 @@ def _list_folders() -> list[str]:
             if os.path.isdir(path) and not name.startswith("."):
                 folders.add(name)
     folders.add(config.DEFAULT_FOLDER)
+    folders.add(config.YOUTUBE_DEFAULT_FOLDER)
     return sorted(folders)
 
 
@@ -74,6 +91,7 @@ async def index(request: Request):
             "jobs": get_all_jobs(),
             "folders": _list_folders(),
             "default_folder": config.DEFAULT_FOLDER,
+            "youtube_default_folder": config.YOUTUBE_DEFAULT_FOLDER,
         },
     )
 
@@ -91,9 +109,10 @@ async def add_job(
     If the URL was already submitted, returns an HTMX warning partial with
     an 'Add Anyway' option — unless force=True.
     """
-    # Validate URL
+    platform = _detect_platform(url)
+
     try:
-        shortcode = extract_shortcode(url)
+        content_id = _extract_id(url, platform)
     except ValueError as e:
         return templates.TemplateResponse(
             request,
@@ -101,7 +120,6 @@ async def add_job(
             {"error": str(e)},
         )
 
-    # Dedup check
     if not force and job_exists_for_url(url):
         return templates.TemplateResponse(
             request,
@@ -109,8 +127,7 @@ async def add_job(
             {"warning": True, "url": url, "folder": folder, "save_video": save_video},
         )
 
-    # Create job and wake the worker
-    create_job(url=url, shortcode=shortcode, folder=folder, save_video=save_video)
+    create_job(url=url, shortcode=content_id, folder=folder, save_video=save_video, platform=platform)
     signal_worker()
 
     response = templates.TemplateResponse(

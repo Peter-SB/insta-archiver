@@ -16,6 +16,7 @@ import os
 DATA_DIR = os.environ.get("DATA_DIR", "/data")
 WHISPER_MODEL = os.environ.get("WHISPER_MODEL", "base")
 DEFAULT_FOLDER = "Insta Archive"
+YOUTUBE_DEFAULT_FOLDER = "YouTube Archive"
 
 DB_DIR = os.path.join(DATA_DIR, "db")
 MARKDOWN_DIR = os.path.join(DATA_DIR, "markdown")
