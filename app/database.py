@@ -47,18 +47,23 @@ def init_db() -> None:
             save_video    INTEGER NOT NULL DEFAULT 0,
             note_path     TEXT,
             error_message TEXT,
-            created_at    TEXT    NOT NULL
+            created_at    TEXT    NOT NULL,
+            platform      TEXT    NOT NULL DEFAULT 'instagram'
         )
     """)
+    try:
+        conn.execute("ALTER TABLE jobs ADD COLUMN platform TEXT NOT NULL DEFAULT 'instagram'")
+    except sqlite3.OperationalError:
+        pass
     conn.commit()
 
 
-def create_job(url: str, shortcode: str, folder: str, save_video: bool = False) -> int:
+def create_job(url: str, shortcode: str, folder: str, save_video: bool = False, platform: str = "instagram") -> int:
     """Insert a new job with status 'waiting'. Returns the new job ID."""
     conn = _get_connection()
     cursor = conn.execute(
-        "INSERT INTO jobs (url, shortcode, folder, save_video, status, created_at) VALUES (?, ?, ?, ?, 'waiting', ?)",
-        (url, shortcode, folder, int(save_video), datetime.now(timezone.utc).isoformat()),
+        "INSERT INTO jobs (url, shortcode, folder, save_video, status, created_at, platform) VALUES (?, ?, ?, ?, 'waiting', ?, ?)",
+        (url, shortcode, folder, int(save_video), datetime.now(timezone.utc).isoformat(), platform),
     )
     conn.commit()
     return cursor.lastrowid
