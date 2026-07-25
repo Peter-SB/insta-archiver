@@ -4,7 +4,7 @@ services:
     container_name: insta-archiver
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8012:8000"
     volumes:
       # Mount each data directory independently so they can be mapped to
       # different host locations (e.g. markdown directly into an Obsidian vault).

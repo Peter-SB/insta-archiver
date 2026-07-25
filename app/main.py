@@ -105,7 +105,7 @@ async def index(request: Request):
 async def add_job(
     request: Request,
     url: str = Form(...),
-    folder: str = Form(config.DEFAULT_FOLDER),
+    folder: str = Form(""),
     save_video: bool = Form(False),
     force: bool = Form(False),
 ):
@@ -115,6 +115,9 @@ async def add_job(
     an 'Add Anyway' option — unless force=True.
     """
     platform = _detect_platform(url)
+
+    if not folder:
+        folder = config.YOUTUBE_DEFAULT_FOLDER if platform == "youtube" else config.DEFAULT_FOLDER
 
     try:
         content_id = _extract_id(url, platform)

@@ -224,10 +224,13 @@
 
         <form hx-post="/jobs" hx-target="#form-result" hx-swap="innerHTML">
             <div class="form-row">
-                <input type="url" name="url" placeholder="Instagram post/reel or YouTube video URL..." required>
-                <select name="folder">
+                <input type="url" id="url-input" name="url" placeholder="Instagram post/reel or YouTube video URL..." required>
+                <select name="folder" id="folder-select"
+                        data-instagram-folder="{{ default_folder }}"
+                        data-youtube-folder="{{ youtube_default_folder }}">
+                    <option value="" disabled selected>-</option>
                     {% for f in folders %}
-                    <option value="{{ f }}" {% if f==default_folder %}selected{% endif %}>{{ f }}</option>
+                    <option value="{{ f }}">{{ f }}</option>
                     {% endfor %}
                 </select>
                 <button type="submit">Archive</button>
@@ -244,6 +247,37 @@
             {% include "partials/job_list.html" %}
         </div>
     </div>
+    <script>
+        (function () {
+            const urlInput = document.getElementById('url-input');
+            const folderSelect = document.getElementById('folder-select');
+            const YOUTUBE_HOSTS = new Set(['youtube.com', 'www.youtube.com', 'youtu.be', 'm.youtube.com']);
+            const INSTAGRAM_HOSTS = new Set(['instagram.com', 'www.instagram.com']);
+
+            function detectPlatform(raw) {
+                try {
+                    const host = new URL(raw).hostname;
+                    if (YOUTUBE_HOSTS.has(host)) return 'youtube';
+                    if (INSTAGRAM_HOSTS.has(host)) return 'instagram';
+                } catch (_) {}
+                return null;
+            }
+
+            function syncFolder(value) {
+                const platform = detectPlatform(value);
+                if (platform === 'youtube') {
+                    folderSelect.value = folderSelect.dataset.youtubeFolder;
+                } else if (platform === 'instagram') {
+                    folderSelect.value = folderSelect.dataset.instagramFolder;
+                } else {
+                    folderSelect.value = '';
+                }
+            }
+
+            urlInput.addEventListener('input', function () { syncFolder(this.value); });
+            urlInput.addEventListener('paste', function () { setTimeout(() => syncFolder(this.value), 0); });
+        })();
+    </script>
 </body>
 
 </html>
